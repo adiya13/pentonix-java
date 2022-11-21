@@ -1,0 +1,39 @@
+pipeline{
+    agent any
+    triggers { pollSCM('H * * * *') }
+    stages{
+        //implicit checkout
+        stage('Verify Branch'){
+            steps{
+                echo "$GIT_BRANCH"
+            }
+        }
+        stage('Maven Build'){
+            steps{
+                sh 'mvn clean install'
+            }
+        }
+        stage('Deploy'){
+             steps{
+                sh 'java -jar ./target/apache-0.0.1-SNAPSHOT.jar &'
+             }
+        }
+        stage('Verify Deployment'){
+             steps{
+                 sh 'ps -ef | grep java'
+             }
+        }
+    }
+    post{
+        always{
+            archiveArtifacts 'target/*.jar'
+            mail bcc: '', 
+                body: "Please go to ${BUILD_URL} and verify the build.", 
+                cc: '', 
+                from: '', 
+                replyTo: '', 
+                subject: "Build Status  ${currentBuild.result} for Build No. ${BUILD_NUMBER}", 
+                to: "aritrasiliguri@gmail.com,digital.workflows@pentonix.co.in"
+        }
+    }
+}
